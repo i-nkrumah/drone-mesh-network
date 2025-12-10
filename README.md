@@ -86,49 +86,196 @@ Edit `config.py` to customize simulation parameters:
 - `trace_ttl_s`: Route trace display duration (default: 6.0s)
 - `node_size`: Node marker size (default: 110)
 
-## How to Run
+## Usage Instructions
 
-### Basic Execution
+### Prerequisites
 
-1. **Navigate to the project directory:**
-   ```bash
-   cd drone-mesh-network
-   ```
+Before running the simulation, ensure you have:
+- Python 3.8 or higher installed
+- matplotlib library installed (`pip install matplotlib`)
+- A display environment (not headless) for visualization
 
-2. **Run the simulation:**
-   ```bash
-   python main.py
-   ```
+### Running the Simulation
 
-3. **The visualization window will open automatically**, showing:
-   - Drone positions (colored circles with node IDs)
-   - Communication links (gray lines between neighbors)
-   - Data paths (colored fading traces showing packet routes)
-   - Simulation time and metrics in the title
+#### Basic Command
+```bash
+cd drone-mesh-network
+python main.py
+```
 
-4. **Stop the simulation:**
-   - Press `Ctrl+C` in the terminal, or
-   - Close the visualization window
+#### Expected Output
 
-### Visualization Controls
+**Console Output:**
+```
+Starting simulation in 2D 
+(simplified MAC, secure-ish handshake, DV cost labels + aging, DV dest cycling)
+```
 
-- **Pause/Resume**: Click the "Pause"/"Resume" button in the visualization window
-- **Real-time Updates**: The display refreshes at the configured FPS
-- **Path Traces**: Recent data packet routes are shown as fading colored lines
+**Visualization Window:**
+- A matplotlib window opens showing the 2D simulation area
+- Drone nodes appear as colored circles with ID labels
+- Gray lines connect nodes within communication range
+- Colored fading traces show data packet routes
+- Title bar displays: simulation time, packet delivery ratio, latency, and hop count
 
-### Expected Output
+**Simulation Flow:**
+1. Nodes initialize at random positions
+2. Nodes begin moving toward random waypoints
+3. Hello beacons discover neighbors (gray links appear)
+4. Distance vector updates establish routes
+5. Application layer initiates handshakes (SessionReq/SessionAck)
+6. Data packets flow along established routes (colored traces)
+7. Metrics update in real-time in the title bar
 
-During simulation, you'll see:
-- Console output indicating simulation start
-- A live matplotlib window showing the network topology
-- Nodes moving around the simulation area
-- Links appearing/disappearing as nodes move in/out of range
-- Colored traces showing successful data transmissions
+### Script Purposes
 
-At the end of the simulation, performance metrics are calculated (internally tracked):
-- Packet delivery ratio
-- Average end-to-end latency
-- Average hop count per packet
+#### Core Scripts
+
+**`main.py`** - Entry Point
+- **Purpose**: Initializes and launches the simulation
+- **Function**: Creates simulation instance, builds network, and starts visualization
+- **Usage**: `python main.py`
+
+**`sim.py`** - Simulation Orchestrator
+- **Purpose**: Manages the simulation lifecycle and coordinates all components
+- **Key Functions**:
+  - `build()`: Creates drone nodes and attaches them to the channel
+  - `run()`: Executes simulation for configured duration with all node tasks
+  - `report()`: Calculates performance statistics (PDR, latency, hop count)
+
+**`config.py`** - Configuration Manager
+- **Purpose**: Centralizes all simulation parameters
+- **Key Variables**:
+  - `SIM_CONFIG`: Dictionary containing all tunable parameters
+  - Network settings (nodes, range, world size)
+  - Protocol timings (hello, DV, handshake periods)
+  - Mobility parameters (speed, waypoint pause)
+  - MAC layer settings (backoff, transmission duration)
+  - Visualization options (FPS, trace duration, node size)
+
+#### Node and Network Scripts
+
+**`node.py`** - Drone Node Implementation
+- **Purpose**: Implements individual drone behavior and protocol stack
+- **Key Functions**:
+  - `mobility_task()`: Updates node position toward current waypoint
+  - `hello_task()`: Broadcasts neighbor discovery beacons periodically
+  - `dv_task()`: Sends distance vector routing updates
+  - `app_task()`: Initiates handshakes and sends data packets
+  - `rx_loop()`: Receives and processes incoming messages
+  - `neighbor_watch_task()`: Ages out stale neighbors based on timeout
+  - `_step_toward_waypoint()`: Calculates and applies incremental movement
+  - `_pick_new_waypoint()`: Selects new random destination
+
+**`channel.py`** - Wireless Channel Simulation
+- **Purpose**: Simulates the wireless medium with simplified CSMA/CA MAC layer
+- **Key Functions**:
+  - `broadcast()`: Transmits messages to all nodes in communication range
+  - `_wait_for_idle_and_backoff()`: Implements carrier sensing and random backoff
+  - `_reserve_channel()`: Marks channel as busy during transmission
+  - `_deliver_in_range()`: Delivers packets to nodes within range with delay/jitter
+
+**`routing.py`** - Distance Vector Routing
+- **Purpose**: Implements Bellman-Ford routing algorithm
+- **Key Functions**:
+  - `ensure_one_hop()`: Establishes direct route to neighbor
+  - `apply_distance_vector()`: Processes received distance vectors (Bellman-Ford relaxation)
+
+**`messages.py`** - Message Definitions
+- **Purpose**: Defines all message types used in the protocol
+- **Message Types**:
+  - `HelloMsg`: Neighbor discovery beacon with position and sequence number
+  - `DVMsg`: Distance vector routing update with full routing table
+  - `SessionReq`: Handshake initiation request from source to destination
+  - `SessionAck`: Handshake acknowledgment from destination back to source
+  - `DataMsg`: Application data packet with payload and path tracking
+
+**`viz2d.py`** - 2D Visualization
+- **Purpose**: Provides real-time graphical display of network state
+- **Key Functions**:
+  - `run_live_viz()`: Main visualization loop with matplotlib animation
+  - `PathTracer2D`: Manages fading route traces for delivered packets
+  - `_update_frame()`: Refreshes visualization with current node positions and connectivity
+  - `add_path()`: Records packet routes for visual display
+
+### Example Commands
+
+#### Standard Simulation (4 nodes, 120 seconds)
+```bash
+python main.py
+```
+
+#### Modify Configuration Before Running
+Edit `config.py` before running:
+```python
+SIM_CONFIG = {
+    "num_nodes": 8,              # Increase network size
+    "comm_range": 300.0,         # Extend communication range
+    "sim_time_s": 180.0,         # Run for 3 minutes
+    "speed_mps": (5.0, 15.0),    # Reduce speed for stability
+}
+```
+Then run: `python main.py`
+
+#### Debug Mode (Enable DV Logging)
+Edit `config.py`:
+```python
+SIM_CONFIG = {
+    ...
+    "log_dv_changes": True,      # See routing updates in console
+    ...
+}
+```
+
+### Interactive Controls
+
+**During Simulation:**
+- **Pause**: Click "Pause" button in visualization window
+- **Resume**: Click "Resume" button to continue
+- **Stop**: Press `Ctrl+C` in terminal or close window
+
+### Expected Inputs
+
+**Configuration File (`config.py`):**
+- All simulation parameters are read from `SIM_CONFIG` dictionary
+- No command-line arguments or runtime inputs required
+- Modify configuration before execution
+
+**Random Seed:**
+- Default seed (42) ensures reproducible results
+- Change seed value in config for different random scenarios
+
+### Expected Outputs
+
+**Visual Output:**
+- Real-time animated network topology
+- Node movement and connectivity changes
+- Data packet routing traces (colored fading lines)
+- Performance metrics in window title
+
+**Console Output:**
+```
+Starting simulation in 2D 
+(simplified MAC, secure-ish handshake, DV cost labels + aging, DV dest cycling)
+[Occasional routing or MAC layer debug messages if enabled]
+```
+
+**Internal Metrics (tracked throughout):**
+- Packet Delivery Ratio (PDR): Percentage of successfully delivered packets
+- Average End-to-End Latency: Mean time from source to destination
+- Average Hop Count: Mean number of hops per delivered packet
+
+### Performance Notes
+
+**Typical Execution:**
+- 4 nodes, 120s simulation: ~2-3 minutes real-time
+- 10 nodes, 180s simulation: ~5-8 minutes real-time
+- Performance depends on: number of nodes, FPS, and system capabilities
+
+**Resource Usage:**
+- CPU: Moderate (visualization dominates)
+- Memory: <100MB for typical configurations
+- Disk: None (no file I/O during simulation)
 
 ## Understanding the Simulation
 
