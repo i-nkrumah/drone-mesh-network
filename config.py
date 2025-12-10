@@ -19,7 +19,7 @@ SIM_CONFIG = {
     "data_payload_bytes": 32,
     "app_pairs_per_period": 2,        # handshake initiations per period
     "seed": 42,
-    "log_dv_changes": False,
+    "log_dv_changes": True,
     # Simplified MAC parameters (CSMA/CA-style)
     "mac_min_backoff_s": 0.001,
     "mac_max_backoff_s": 0.006,
