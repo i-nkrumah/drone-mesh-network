@@ -240,6 +240,6 @@ For optimal performance:
 ## Contact
 
 For questions or issues, please open an issue on the project repository.
-Isaac Nkrumah <isaac.nkrumah@slu.edu>
-Faisal Wahabu <faisal.wahabu@slu.edu>
-Kwabena Adjei Omanhene-Gyimah <kwabenaadjei.omanhenegyimah@slu.edu>
+- Isaac Nkrumah <isaac.nkrumah@slu.edu>
+- Faisal Wahabu <faisal.wahabu@slu.edu>
+- Kwabena Adjei Omanhene-Gyimah <kwabenaadjei.omanhenegyimah@slu.edu>
