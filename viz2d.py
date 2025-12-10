@@ -66,7 +66,22 @@ class LiveArtist2D:
         # We will visualize DV cost to this destination, changeable at runtime
         self.dv_dest = 0
 
-        self.fig, self.ax = plt.subplots(figsize=(11, 7))
+        # Routing table display settings
+        self.show_rt = self.sim.cfg.get("show_routing_tables", False)
+        self.rt_nodes = self.sim.cfg.get("rt_display_nodes", [])
+        if not self.rt_nodes and self.show_rt:
+            self.rt_nodes = [n.nid for n in self.sim.nodes[:2]]  # Default to first 2 nodes
+
+        # Adjust figure layout based on whether we show routing tables
+        if self.show_rt:
+            self.fig = plt.figure(figsize=(16, 8))
+            # Create grid: main plot on left, routing tables on right
+            gs = self.fig.add_gridspec(1, 2, width_ratios=[2, 1], wspace=0.3)
+            self.ax = self.fig.add_subplot(gs[0])
+            self.ax_rt = self.fig.add_subplot(gs[1])
+            self.ax_rt.axis('off')
+        else:
+            self.fig, self.ax = plt.subplots(figsize=(11, 7))
         W, H = self.sim.cfg["world_size"]
         self.ax.set_xlim(0, W)
         self.ax.set_ylim(0, H)
@@ -152,10 +167,25 @@ class LiveArtist2D:
             fontsize=9,
         )
 
+        # Routing table text objects
+        self.rt_text = None
+        if self.show_rt:
+            self.rt_text = self.ax_rt.text(
+                0.05, 0.95, "", 
+                ha='left', va='top', 
+                fontsize=9, 
+                family='monospace',
+                transform=self.ax_rt.transAxes
+            )
+
         # Buttons (Play/Pause, Clear Traces)
         plt.subplots_adjust(bottom=0.12)
-        ax_play = self.fig.add_axes([0.74, 0.02, 0.10, 0.06])
-        ax_clear = self.fig.add_axes([0.86, 0.02, 0.10, 0.06])
+        if self.show_rt:
+            ax_play = self.fig.add_axes([0.45, 0.02, 0.08, 0.06])
+            ax_clear = self.fig.add_axes([0.55, 0.02, 0.08, 0.06])
+        else:
+            ax_play = self.fig.add_axes([0.74, 0.02, 0.10, 0.06])
+            ax_clear = self.fig.add_axes([0.86, 0.02, 0.10, 0.06])
         self.btn_play = Button(ax_play, "Play/Pause")
         self.btn_clear = Button(ax_clear, "Clear Traces")
         self.btn_play.on_clicked(self._toggle_pause)
@@ -173,6 +203,44 @@ class LiveArtist2D:
 
     def _clear_traces(self, _event):
         self.tracer.buff.clear()
+
+    def _format_routing_tables(self) -> str:
+        """Format routing tables for display."""
+        lines = []
+        lines.append("═" * 36)
+        lines.append(" ROUTING TABLES")
+        lines.append("═" * 36)
+        
+        for nid in self.rt_nodes:
+            if nid >= len(self.sim.nodes):
+                continue
+            
+            node = self.sim.nodes[nid]
+            lines.append(f"┌─ NODE {node.nid} " + "─" * 26)
+            lines.append(f"│ Pos:({node.pos[0]:.0f},{node.pos[1]:.0f})")
+            lines.append(f"│ Nbrs:{sorted(node.neighbors)}")
+            lines.append("│")
+            lines.append("│ Dst|Cost|Next|Age")
+            lines.append("│ " + "─" * 19)
+            
+            if not node.rt:
+                lines.append("│ (empty)")
+            else:
+                # Sort by destination ID
+                sorted_entries = sorted(node.rt.items(), key=lambda x: x[0])
+                now = time.time()
+                for dest, route in sorted_entries:
+                    age = now - route.updated_at
+                    # Highlight recent updates (< 2 seconds)
+                    marker = "*" if age < 2.0 else " "
+                    lines.append(f"│{marker}{dest:2d} │{route.cost:3.1f}│ {route.next_hop:2d} │{age:3.0f}")
+            
+            lines.append(f"│ Gen:{node.generated} Del:{node.delivered}")
+            lines.append("└" + "─" * 29)
+        
+        lines.append("* = update <2s ago")
+        
+        return "\n".join(lines)
 
     def _on_key(self, event):
         if event.key in ("p", "P", " "):  # spacebar also pauses
@@ -293,7 +361,15 @@ class LiveArtist2D:
                 f"Avg hops: {avg_hops:.2f}   Avg latency: {avg_lat:.3f}s"
             )
 
-        return self.scatter, self.lines, self.trace_lines, *self.labels, *self.dv_labels, self.hud
+            # Update routing tables display
+            if self.show_rt and self.rt_text is not None:
+                rt_str = self._format_routing_tables()
+                self.rt_text.set_text(rt_str)
+
+        artists = [self.scatter, self.lines, self.trace_lines, *self.labels, *self.dv_labels, self.hud]
+        if self.rt_text is not None:
+            artists.append(self.rt_text)
+        return artists
 
 
 def run_live_viz(sim: Simulation):

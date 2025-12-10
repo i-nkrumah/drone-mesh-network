@@ -34,6 +34,9 @@ SIM_CONFIG = {
     # Route trace styling
     "trace_ttl_s": 6.0,               # how long a trace stays on screen
     "trace_max_segments": 600,        # cap to avoid unbounded memory
+    # Routing table visualization
+    "show_routing_tables": True,     # Show detailed routing tables in side panel
+    "rt_display_nodes": [0, 1],      # Which nodes to show routing tables for (empty = all)
 }
 
 # Global seed + style

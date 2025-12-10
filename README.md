@@ -85,6 +85,8 @@ Edit `config.py` to customize simulation parameters:
 - `fps`: Frames per second (default: 15)
 - `trace_ttl_s`: Route trace display duration (default: 6.0s)
 - `node_size`: Node marker size (default: 110)
+- `show_routing_tables`: Enable detailed routing table panel (default: True)
+- `rt_display_nodes`: List of node IDs to show routing tables for (default: [0, 1])
 
 ## Usage Instructions
 
@@ -117,6 +119,11 @@ Starting simulation in 2D
 - Gray lines connect nodes within communication range
 - Colored fading traces show data packet routes
 - Title bar displays: simulation time, packet delivery ratio, latency, and hop count
+- **Routing Table Panel** (if enabled): Shows real-time routing tables with:
+  - Complete cost data to all destinations
+  - Next hop information
+  - Route age (time since last update)
+  - Recent updates highlighted with asterisk (*)
 
 **Simulation Flow:**
 1. Nodes initialize at random positions
@@ -226,6 +233,25 @@ SIM_CONFIG = {
     ...
 }
 ```
+
+#### Testing with Routing Table Visualization (2 nodes)
+Edit `config.py` to verify routing table updates:
+```python
+SIM_CONFIG = {
+    "num_nodes": 2,                    # Simplified network for testing
+    "show_routing_tables": True,       # Enable RT panel
+    "rt_display_nodes": [0, 1],        # Show both nodes
+    "comm_range": 260.0,               # Ensure nodes can communicate
+    "sim_time_s": 60.0,                # Shorter test duration
+    ...
+}
+```
+This configuration displays a side panel showing:
+- Complete routing tables for nodes 0 and 1
+- Real-time cost updates (highlighted with * when changed)
+- Next hop information for each destination
+- Route age to verify table freshness
+Then run: `python main.py`
 
 ### Interactive Controls
 
