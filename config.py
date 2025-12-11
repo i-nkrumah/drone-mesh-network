@@ -9,7 +9,7 @@ SIM_CONFIG = {
     "dv_period_s": 1.2,               # routing periodic updates
     "mobility_step_s": 0.20,          # mobility tick
     "app_send_period_s": 1.6,         # handshake initiation period
-    "sim_time_s": 120.0,              # total simulation time
+    "sim_time_s": 140.0,              # total simulation time
     "speed_mps": (10.0, 22.0),        # waypoint speed range
     "waypoint_pause_s": (0.0, 0.4),
     "channel_jitter_s": (0.002, 0.020),
