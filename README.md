@@ -207,7 +207,7 @@ Starting simulation in 2D
 
 ### Example Commands
 
-#### Standard Simulation (4 nodes, 120 seconds)
+#### Standard Simulation (4 nodes, 140 seconds)
 ```bash
 python main.py
 ```
